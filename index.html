@@ -1,220 +1,95 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <meta name="google-site-verification" content="googleebf2679a2075cf31" />
-    
-    <title>YOU | النظام المالي المتكامل</title>
-    ...
-
-    <title>YOU | النظام المالي المتكامل</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    
-    <style>
-        :root {
-            --bg-purple: #0a0a1a;
-            --card-purple: #16213e;
-            --accent-gold: #ffd700;
-            --text-white: #ffffff;
-            --success-green: #00ff88;
-            --fee-red: #ff4d4d;
-            --transfer-orange: #ff9800;
-        }
-
-        body {
-            font-family: 'Cairo', sans-serif;
-            background-color: var(--bg-purple);
-            color: var(--text-white);
-            margin: 0; padding: 0;
-            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
-        }
-
-        /* شاشة الدخول */
-        #loginOverlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-purple); z-index: 9999;
-            display: flex; align-items: center; justify-content: center;
-        }
-
-        .login-box {
-            background: var(--card-purple); padding: 50px 30px; border-radius: 30px;
-            text-align: center; border: 2px solid var(--accent-gold);
-            width: 90%; max-width: 450px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-        }
-
-        input[type="password"] {
-            padding: 15px; border-radius: 15px; border: none; width: 100%;
-            text-align: center; font-size: 2rem; margin-bottom: 30px; background: #fff; color: #000;
-        }
-
-        /* الحاوية الرئيسية (ملاء الصفحة) */
-        .container { width: 95%; max-width: 600px; margin-top: 50px; padding-bottom: 100px; }
-
-        .balance-card {
-            background: linear-gradient(145deg, #16213e, #1a1a2e);
-            padding: 40px 20px; border-radius: 35px; text-align: center;
-            border-bottom: 6px solid var(--accent-gold); margin-bottom: 40px;
-            position: relative; box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-        }
-
-        .qr-btn {
-            position: absolute; top: 25px; left: 25px;
-            background: var(--accent-gold); border: none; border-radius: 15px;
-            width: 60px; height: 60px; cursor: pointer; display: flex;
-            align-items: center; justify-content: center; font-weight: 900; font-size: 1.2rem;
-        }
-
-        .balance-card h1 { font-size: 3.5rem; color: var(--accent-gold); margin: 15px 0; font-weight: 900; }
-
-        .actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-
-        .btn-action {
-            background: var(--card-purple); border: 1px solid rgba(255,215,0,0.3);
-            color: white; padding: 30px 10px; border-radius: 25px;
-            font-weight: 700; cursor: pointer; transition: 0.3s; font-size: 1.3rem;
-        }
-
-        .btn-transfer { border-color: var(--transfer-orange); color: var(--transfer-orange); }
-
-        .btn-action:active { transform: scale(0.92); background: var(--accent-gold); color: #000; }
-
-        /* سجل العمليات */
-        #history-section { margin-top: 50px; width: 100%; display: none; }
-        #history-section h3 { font-size: 1.8rem; border-right: 6px solid var(--accent-gold); padding-right: 15px; }
-
-        .transaction-item {
-            background: rgba(255,255,255,0.03); margin-bottom: 20px;
-            padding: 25px; border-radius: 25px; display: flex;
-            justify-content: space-between; align-items: center;
-        }
-
-        .amt-deposit { color: var(--success-green); font-weight: 900; font-size: 1.6rem; }
-        .amt-transfer { color: var(--fee-red); font-weight: 900; font-size: 1.6rem; }
-
-        #qrModal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 10000;
-            display: none; align-items: center; justify-content: center;
-        }
-        .qr-content { background: white; padding: 40px; border-radius: 40px; text-align: center; }
-    </style>
+    <title>YOU Payment - نظام دفع آمن</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+    <div class="container">
+        <div class="payment-card">
+            <h1>💳 YOU Payment</h1>
+            <p>نظام دفع آمن وسريع</p>
 
-<div id="loginOverlay">
-    <div class="login-box">
-        <h2 style="color:var(--accent-gold)">YOU SAFE</h2>
-        <input type="password" id="pinInput" placeholder="••••">
-        <button onclick="checkPin()" style="background:var(--accent-gold); border:none; padding:20px; border-radius:15px; font-weight:900; width:100%; font-size:1.5rem; cursor:pointer;">دخول النظام</button>
+            <form id="paymentForm">
+                <div class="form-group">
+                    <label>رقم البطاقة</label>
+                    <input type="text" id="card_number" placeholder="1234 5678 9012 3456" maxlength="19" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>تاريخ الانتهاء</label>
+                        <input type="text" id="expiry" placeholder="MM/YY" maxlength="5" required>
+                    </div>
+                    <div class="form-group">
+                        <label>CVV</label>
+                        <input type="text" id="cvv" placeholder="123" maxlength="3" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>المبلغ ($)</label>
+                    <input type="number" id="amount" placeholder="أدخل المبلغ" step="0.01" required>
+                </div>
+
+                <button type="submit" id="payBtn">💸 ادفع الآن</button>
+            </form>
+
+            <div id="result" class="result hidden"></div>
+        </div>
     </div>
-</div>
 
-<div id="qrModal" onclick="this.style.display='none'">
-    <div class="qr-content" onclick="event.stopPropagation()">
-        <div id="qrcode"></div>
-        <p style="color: #000; margin-top: 20px; font-size: 1.2rem; font-weight: bold;">امسح الكود السريع</p>
-    </div>
-</div>
+    <script>
+        document.getElementById('paymentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payBtn = document.getElementById('payBtn');
+            const resultDiv = document.getElementById('result');
+            
+            payBtn.disabled = true;
+            payBtn.textContent = 'جاري المعالجة...';
+            resultDiv.classList.add('hidden');
 
-<div class="container">
-    <div class="balance-card">
-        <button class="qr-btn" onclick="showQR()">QR</button>
-        <p>الرصيد المتاح حالياً</p>
-        <h1 id="balanceDisplay">0.00 EGP</h1>
-    </div>
+            const data = {
+                card_number: document.getElementById('card_number').value,
+                expiry: document.getElementById('expiry').value,
+                cvv: document.getElementById('cvv').value,
+                amount: document.getElementById('amount').value
+            };
 
-    <div class="actions-grid">
-        <button class="btn-action" onclick="handleAction('إيداع فودافون')">فودافون كاش</button>
-        <button class="btn-action" onclick="handleAction('إيداع فوري')">فوري / أمان</button>
-        <button class="btn-action" onclick="handleAction('إيداع اتصالات')">اتصالات كاش</button>
-        <button class="btn-action btn-transfer" onclick="handleAction('تحويل رصيد')">تحويل رصيد ⇇</button>
-    </div>
-
-    <div id="history-section">
-        <h3>سجل العمليات المالي</h3>
-        <div id="transactions-list"></div>
-    </div>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
-<script>
-    // إعدادات قاعدة بيانات أشرف
-    const firebaseConfig = { databaseURL: "https://ashraflx71-9efae-default-rtdb.firebaseio.com/" };
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
-
-    function checkPin() {
-        if (document.getElementById('pinInput').value === "2026") {
-            document.getElementById('loginOverlay').style.display = 'none';
-            sessionStorage.setItem('isLoggedIn', 'true');
-            initApp();
-        } else { alert("الرمز خطأ!"); }
-    }
-
-    function showQR() {
-        const qrContainer = document.getElementById('qrcode');
-        qrContainer.innerHTML = '';
-        new QRCode(qrContainer, { text: window.location.href, width: 250, height: 250 });
-        document.getElementById('qrModal').style.display = 'flex';
-    }
-
-    function initApp() {
-        database.ref('transactions').on('value', (snapshot) => {
-            const list = document.getElementById('transactions-list');
-            const balanceText = document.getElementById('balanceDisplay');
-            list.innerHTML = ''; let total = 0;
-            const data = snapshot.val();
-            if (data) {
-                document.getElementById('history-section').style.display = 'block';
-                Object.values(data).reverse().forEach(tx => {
-                    const amt = parseFloat(tx.amount) || 0;
-                    const fee = parseFloat(tx.fees) || 0;
-                    const isTransfer = tx.type === 'تحويل رصيد';
-                    
-                    total += isTransfer ? -(amt + fee) : (amt + fee);
-
-                    const div = document.createElement('div');
-                    div.className = 'transaction-item';
-                    div.innerHTML = `
-                        <div><strong>${tx.type}</strong><br><small>${tx.time}</small></div>
-                        <div style="text-align:left">
-                            <div class="${isTransfer ? 'amt-transfer' : 'amt-deposit'}">${isTransfer ? '-' : '+'}${amt.toLocaleString()}</div>
-                            <span style="font-size:0.9rem; color:var(--fee-red)">رسوم: ${fee.toLocaleString()}</span>
-                        </div>`;
-                    list.appendChild(div);
+            try {
+                const response = await fetch('/process_payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
                 });
+                const result = await response.json();
+                
+                resultDiv.classList.remove('hidden');
+                if (result.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `✅ ${result.message}<br>🆔 رقم العملية: ${result.transaction_id}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `❌ ${result.message}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = '❌ حدث خطأ في الاتصال بالخادم';
+            } finally {
+                payBtn.disabled = false;
+                payBtn.textContent = '💸 ادفع الآن';
             }
-            balanceText.innerText = total.toLocaleString(undefined, {minimumFractionDigits:2}) + " EGP";
         });
-    }
 
-    function handleAction(type) {
-        const val = prompt(`إدخال مبلغ لعملية (${type}):`);
-        const n = parseFloat(val);
-        if (val && !isNaN(n) && n > 0) {
-            let f = (type === 'تحويل رصيد') ? 0 : (type.includes("كاش") ? Math.max(3, n * 0.01) : (n <= 100 ? 3 : n * 0.01 + 2));
-            const msg = type === 'تحويل رصيد' ? `تأكيد خصم مبلغ ${n}؟` : `تأكيد إيداع مبلغ ${n} برسوم ${f}؟`;
-
-            if (confirm(msg)) {
-                database.ref('transactions').push({ 
-                    type, amount: n, fees: f, 
-                    time: new Date().toLocaleTimeString('ar-EG') 
-                });
-            }
-        }
-    }
-
-    if (sessionStorage.getItem('isLoggedIn') === 'true') {
-        document.getElementById('loginOverlay').style.display = 'none';
-        initApp();
-    }
-</script>
+        // تنسيق رقم البطاقة تلقائياً
+        document.getElementById('card_number').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\s/g, '');
+            if (value.length > 16) value = value.slice(0, 16);
+            value = value.replace(/(\d{4})/g, '$1 ').trim();
+            e.target.value = value;
+        });
+    </script>
 </body>
 </html>
