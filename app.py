@@ -1,110 +1,87 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YOU Payment - نظام دفع آمن</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="container">
-        <div class="payment-card">
-            <h1>💳 YOU Payment</h1>
-            <p>نظام دفع آمن وسريع</p>
+from flask import Flask, render_template, request, jsonify
+import uuid
+import re
 
-            <form id="paymentForm">
-                <div class="form-group">
-                    <label>رقم البطاقة</label>
-                    <input type="text" id="card_number" placeholder="1234 5678 9012 3456" maxlength="19" required>
-                </div>
+app = Flask(__name__)
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>تاريخ الانتهاء</label>
-                        <input type="text" id="expiry" placeholder="MM/YY" maxlength="5" required>
-                    </div>
-                    <div class="form-group">
-                        <label>CVV</label>
-                        <input type="text" id="cvv" placeholder="123" maxlength="3" required>
-                    </div>
-                </div>
+# دالة بسيطة للتحقق من صيغة تاريخ الانتهاء MM/YY
+def is_valid_expiry(expiry):
+    pattern = r"^(0[1-9]|1[0-2])\/([0-9]{2})$"
+    return bool(re.match(pattern, expiry))
 
-                <div class="form-group">
-                    <label>المبلغ ($)</label>
-                    <input type="number" id="amount" placeholder="أدخل المبلغ" step="0.01" required>
-                </div>
+@app.route('/')
+def index():
+    # عرض الصفحة الرئيسية ونظام الدفع
+    return render_template('index.html')
 
-                <button type="submit" id="payBtn">💸 ادفع الآن</button>
-            </form>
+@app.route('/process_payment', codecs=['POST'])
+def process_payment():
+    try:
+        data = request.get_json()
+        
+        # استخراج البيانات القادمة من الواجهة الأمامية
+        card_number = data.get('card_number', '').strip()
+        expiry = data.get('expiry', '').strip()
+        cvv = data.get('cvv', '').strip()
+        amount = data.get('amount', '')
 
-            <div id="result" class="result hidden"></div>
-        </div>
-    </div>
+        # 1. التحقق من وجود جميع الحقول
+        if not all([card_number, expiry, cvv, amount]):
+            return jsonify({
+                "success": False,
+                "message": "برجاء ملء جميع الحقول المطلوبة بشكل صحيح."
+            }), 400
 
-    <script>
-        document.getElementById('paymentForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const payBtn = document.getElementById('payBtn');
-            const resultDiv = document.getElementById('result');
-            
-            payBtn.disabled = true;
-            payBtn.textContent = 'جاري المعالجة...';
-            resultDiv.classList.add('hidden');
+        # 2. التحقق من رقم البطاقة (يجب أن يكون 16 رقماً بعد التنظيف في الـ JS)
+        if not card_number.isdigit() or len(card_number) != 16:
+            return jsonify({
+                "success": False,
+                "message": "رقم البطاقة غير صالح، يجب أن يتكون من 16 رقماً."
+            }), 400
 
-            // تحسين: تنظيف الفراغات من رقم البطاقة قبل إرساله للخلفية ليتوافق مع شروط التحقق في Python
-            const rawCardNumber = document.getElementById('card_number').value.replace(/\s/g, '');
+        # 3. التحقق من صيغة تاريخ الانتهاء (MM/YY)
+        if not is_valid_expiry(expiry):
+            return jsonify({
+                "success": False,
+                "message": "تاريخ الانتهاء غير صالح. الصيغة الصحيحة هي الشهر/السنة (MM/YY)."
+            }), 400
 
-            const data = {
-                card_number: rawCardNumber,
-                expiry: document.getElementById('expiry').value,
-                cvv: document.getElementById('cvv').value,
-                amount: document.getElementById('amount').value
-            };
+        # 4. التحقق من الـ CVV (يجب أن يكون 3 أرقام)
+        if not cvv.isdigit() or len(cvv) != 3:
+            return jsonify({
+                "success": False,
+                "message": "رمز الأمان (CVV) غير صالح، يجب أن يتكون من 3 أرقام."
+            }), 400
 
-            try {
-                const response = await fetch('/process_payment', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                const result = await response.json();
-                
-                resultDiv.classList.remove('hidden');
-                if (result.success) {
-                    resultDiv.className = 'result success';
-                    resultDiv.innerHTML = `✅ ${result.message}<br>🆔 رقم العملية: ${result.transaction_id}`;
-                } else {
-                    resultDiv.className = 'result error';
-                    resultDiv.innerHTML = `❌ ${result.message}`;
-                }
-            } catch (error) {
-                resultDiv.className = 'result error';
-                resultDiv.innerHTML = '❌ حدث خطأ في الاتصال بالخادم';
-            } finally {
-                payBtn.disabled = false;
-                payBtn.textContent = '💸 ادفع الآن';
-            }
-        });
+        # 5. التحقق من قيمة المبلغ
+        try:
+            amount_float = float(amount)
+            if amount_float <= 0:
+                raise ValueError
+        except ValueError:
+            return jsonify({
+                "success": False,
+                "message": "قيمة المبلغ يجب أن تكون أكبر من الصفر."
+            }), 400
 
-        // تنسيق رقم البطاقة تلقائياً عند الكتابة وإضافة الفراغات بشكل صحيح
-        document.getElementById('card_number').addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\s/g, '');
-            if (value.length > 16) value = value.slice(0, 16);
-            
-            // تحسين تعبير النمط (Regex) لإضافة الفراغات بسلاسة أثناء الكتابة ومسحها
-            let formattedValue = value.match(/.{1,4}/g);
-            e.target.value = formattedValue ? formattedValue.join(' ') : value;
-        });
+        # ---- محاكاة معالجة الدفع الناجحة ----
+        # توليد رقم عملية فريد عشوائي لحفظ المعاملة
+        transaction_id = str(uuid.uuid4().hex[:12]).upper()
 
-        // تحسين إضافي: تنسيق تلقائي لتاريخ الانتهاء لإضافة الشرطة (/) تلقائياً
-        document.getElementById('expiry').addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.length > 4) value = value.slice(0, 4);
-            if (value.length > 2) {
-                value = value.slice(0, 2) + '/' + value.slice(2);
-            }
-            e.target.value = value;
-        });
-    </script>
-</body>
-</html>
+        return jsonify({
+            "success": True,
+            "message": f"تمت عملية الدفع بنجاح بقيمة ${amount_float:.2f}",
+            "transaction_id": f"PAY-{transaction_id}"
+        }), 200
+
+    except Exception as e:
+        # التعامل مع أي أخطاء غير متوقعة في الخادم
+        return jsonify({
+            "success": False,
+            "message": "حدث خطأ داخلي في الخادم أثناء معالجة العملية."
+        }), 500
+
+if __name__ == '__main__':
+    # تشغيل التطبيق في وضع التطوير المحلي
+    app.run(debug=True)
+    
