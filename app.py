@@ -1,35 +1,110 @@
-from flask import Flask, render_template, request, jsonify
-import json
-import os
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOU Payment - نظام دفع آمن</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="payment-card">
+            <h1>💳 YOU Payment</h1>
+            <p>نظام دفع آمن وسريع</p>
 
-app = Flask(__name__)
+            <form id="paymentForm">
+                <div class="form-group">
+                    <label>رقم البطاقة</label>
+                    <input type="text" id="card_number" placeholder="1234 5678 9012 3456" maxlength="19" required>
+                </div>
 
-# الصفحة الرئيسية
-@app.route('/')
-def home():
-    return render_template('index.html')
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>تاريخ الانتهاء</label>
+                        <input type="text" id="expiry" placeholder="MM/YY" maxlength="5" required>
+                    </div>
+                    <div class="form-group">
+                        <label>CVV</label>
+                        <input type="text" id="cvv" placeholder="123" maxlength="3" required>
+                    </div>
+                </div>
 
-# معالجة عملية الدفع
-@app.route('/process_payment', methods=['POST'])
-def process_payment():
-    data = request.get_json()
-    
-    # محاكاة معالجة الدفع
-    card_number = data.get('card_number')
-    amount = data.get('amount')
-    
-    # تحقق بسيط (في الحقيقة ستتصل بـ Stripe أو PayPal API)
-    if card_number and amount:
-        return jsonify({
-            'success': True,
-            'message': f'تم استلام مبلغ {amount}$ بنجاح',
-            'transaction_id': 'TXN_' + os.urandom(4).hex()
-        })
-    else:
-        return jsonify({
-            'success': False,
-            'message': 'بيانات الدفع غير مكتملة'
-        }), 400
+                <div class="form-group">
+                    <label>المبلغ ($)</label>
+                    <input type="number" id="amount" placeholder="أدخل المبلغ" step="0.01" required>
+                </div>
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+                <button type="submit" id="payBtn">💸 ادفع الآن</button>
+            </form>
+
+            <div id="result" class="result hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('paymentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payBtn = document.getElementById('payBtn');
+            const resultDiv = document.getElementById('result');
+            
+            payBtn.disabled = true;
+            payBtn.textContent = 'جاري المعالجة...';
+            resultDiv.classList.add('hidden');
+
+            // تحسين: تنظيف الفراغات من رقم البطاقة قبل إرساله للخلفية ليتوافق مع شروط التحقق في Python
+            const rawCardNumber = document.getElementById('card_number').value.replace(/\s/g, '');
+
+            const data = {
+                card_number: rawCardNumber,
+                expiry: document.getElementById('expiry').value,
+                cvv: document.getElementById('cvv').value,
+                amount: document.getElementById('amount').value
+            };
+
+            try {
+                const response = await fetch('/process_payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                
+                resultDiv.classList.remove('hidden');
+                if (result.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `✅ ${result.message}<br>🆔 رقم العملية: ${result.transaction_id}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `❌ ${result.message}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = '❌ حدث خطأ في الاتصال بالخادم';
+            } finally {
+                payBtn.disabled = false;
+                payBtn.textContent = '💸 ادفع الآن';
+            }
+        });
+
+        // تنسيق رقم البطاقة تلقائياً عند الكتابة وإضافة الفراغات بشكل صحيح
+        document.getElementById('card_number').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\s/g, '');
+            if (value.length > 16) value = value.slice(0, 16);
+            
+            // تحسين تعبير النمط (Regex) لإضافة الفراغات بسلاسة أثناء الكتابة ومسحها
+            let formattedValue = value.match(/.{1,4}/g);
+            e.target.value = formattedValue ? formattedValue.join(' ') : value;
+        });
+
+        // تحسين إضافي: تنسيق تلقائي لتاريخ الانتهاء لإضافة الشرطة (/) تلقائياً
+        document.getElementById('expiry').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 4) value = value.slice(0, 4);
+            if (value.length > 2) {
+                value = value.slice(0, 2) + '/' + value.slice(2);
+            }
+            e.target.value = value;
+        });
+    </script>
+</body>
+</html>
